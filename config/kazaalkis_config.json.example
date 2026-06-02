@@ -1,0 +1,21 @@
+{
+  "project_name": "KazaALKIS",
+  "version": "1.1.0",
+  "ai_root": "E:\\AI",
+  "database_path": "E:\\07_050_Workspaces_Code_Projects(latest)\\KazaALKIS\\data\\kazaalkis.db",
+  "source_data_path": "",
+  "whatsapp_provider": "manual",
+  "contacts_file": "E:\\07_050_Workspaces_Code_Projects(latest)\\KazaALKIS\\data\\contacts.json",
+  "logs_path": "E:\\AI\\logs\\KazaALKIS",
+  "outputs_path": "E:\\AI\\outputs\\KazaALKIS",
+  "tmp_path": "E:\\AI\\tmp\\KazaALKIS",
+  "sending_time": "08:00",
+  "language": "bilingual",
+  "message_tone": "friendly",
+  "timezone": "Europe/Athens",
+  "auto_schedule": false,
+  "schedule_frequency": "daily",
+  "log_retention_days": 90,
+  "enable_logging": true,
+  "privacy_mask_contacts": true
+}
