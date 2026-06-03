@@ -4,70 +4,193 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>KazaALKIS | Daily Greek Calendar</title>
-  <style>
-    :root { color-scheme: light; font-family: Georgia, serif; }
-    body { margin: 0; background: #f6f1e8; color: #243028; }
-    main { max-width: 760px; margin: 0 auto; padding: 48px 22px; }
-    h1, h2 { color: #174d3b; }
-    .card { background: #fffdf8; border: 1px solid #d9cfbd; border-radius: 14px; padding: 22px; margin: 22px 0; }
-    pre { white-space: pre-wrap; font-family: Georgia, serif; line-height: 1.5; }
-    a { color: #12634a; }
-    footer { margin-top: 32px; font-size: 0.95rem; color: #59635e; }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main>
-    <h1>KazaALKIS</h1>
-    <p>
-      KazaALKIS is an opt-in Greek daily calendar notification service for
-      name days, public holidays, cultural greetings, historical notes, and
-      public-domain Greek proverbs.
-    </p>
+  <header class="header site-hero">
+    <div class="container">
+      <div class="logo">
+        <h1>KazaALKIS</h1>
+        <p class="tagline">Daily Greek calendar, culture, sky notes, and opt-in blessings.</p>
+      </div>
+    </div>
+  </header>
 
-    <section class="card">
-      <h2>Today's Calendar</h2>
-      <pre id="daily-message">No public daily notification has been published yet.</pre>
-    </section>
-
-    <section class="card">
-      <h2>Bilingual Commentary</h2>
-      <p><strong>English</strong></p>
-      <p id="commentary-en">No commentary has been published yet.</p>
-      <p><strong>Ελληνικά</strong></p>
-      <p id="commentary-gr">Δεν έχει δημοσιευτεί ακόμη σχόλιο.</p>
-    </section>
-
-    <section>
-      <h2>WhatsApp Notifications</h2>
+  <main class="main-content">
+    <section class="container hero-panel">
+      <p class="eyebrow">Today’s public note</p>
+      <h2 id="today-title">Ημερήσιο ελληνικό ημερολόγιο</h2>
       <p>
-        Messages are sent only to users who have consented. Users may request
-        removal from the notification list at any time.
+        KazaALKIS brings together name days, Orthodox context, ancient Greek seasonal
+        parallels, and gentle moon/zodiac notes. Messages are published only from
+        reviewed public-safe data.
       </p>
-      <p>
-        KazaALKIS is not an official Kazamias publication.
-      </p>
+      <p class="status-pill" id="generated-at">Waiting for today’s public update</p>
     </section>
 
-    <footer>
+    <section class="container dashboard-grid" aria-label="Daily calendar fields">
+      <article class="card feature-card image-card nameday-card">
+        <p class="card-kicker">Name Day</p>
+        <h2>Σήμερα γιορτάζουν</h2>
+        <div class="field-content">
+          <div id="namedays-list" class="pill-list">No name-day entry has been published yet.</div>
+        </div>
+      </article>
+
+      <article class="card feature-card image-card moon-card">
+        <p class="card-kicker">Astrology & Moon</p>
+        <h2>Ουρανός της ημέρας</h2>
+        <div class="field-content">
+          <div id="sky-summary" class="sky-summary">No astrology or moon note has been published yet.</div>
+        </div>
+      </article>
+
+      <article class="card wide-card">
+        <p class="card-kicker">Cultural Meaning</p>
+        <h2>Πολιτιστικό νόημα</h2>
+        <div class="language-grid">
+          <div>
+            <h3>English</h3>
+            <p id="reflection-en">No cultural reflection has been published yet.</p>
+          </div>
+          <div>
+            <h3>Ελληνικά</h3>
+            <p id="reflection-gr">Δεν έχει δημοσιευτεί ακόμη πολιτιστικό σημείωμα.</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="card image-card traditions-card">
+        <p class="card-kicker">Parallel Traditions</p>
+        <h2>Ορθόδοξο & αρχαίο</h2>
+        <div class="field-content">
+          <div id="parallel-traditions">No reviewed tradition comparison has been published yet.</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <p class="card-kicker">Commentary</p>
+        <h2>Bilingual note</h2>
+        <div class="stacked-text">
+          <p><strong>English</strong></p>
+          <p id="commentary-en">No commentary has been published yet.</p>
+          <p><strong>Ελληνικά</strong></p>
+          <p id="commentary-gr">Δεν έχει δημοσιευτεί ακόμη σχόλιο.</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <p class="card-kicker">Message Preview</p>
+        <h2>Daily notification</h2>
+        <pre id="daily-message">No public daily notification has been published yet.</pre>
+      </article>
+
+      <article class="card">
+        <p class="card-kicker">Opt-in</p>
+        <h2>WhatsApp Notifications</h2>
+        <p>
+          Messages are sent only to users who have consented. Users may request
+          removal from the notification list at any time.
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
       <p>Contact: <a href="mailto:alkisjp@gmail.com">alkisjp@gmail.com</a></p>
       <p>
         <a href="privacy.html">Privacy Policy</a> |
         <a href="terms.html">Terms of Service</a>
       </p>
-    </footer>
-  </main>
+    </div>
+  </footer>
+
   <script>
+    const text = (id, value) => {
+      const element = document.getElementById(id);
+      if (element && value) element.textContent = value;
+    };
+
+    const clear = (element) => {
+      while (element.firstChild) element.removeChild(element.firstChild);
+    };
+
+    const paragraph = (value, className) => {
+      const p = document.createElement("p");
+      p.textContent = value;
+      if (className) p.className = className;
+      return p;
+    };
+
+    const renderNamedays = (items) => {
+      const container = document.getElementById("namedays-list");
+      if (!container || !items || !items.length) return;
+      clear(container);
+      items.forEach((item) => {
+        const names = (item.names || item.name || "").split(",").map((name) => name.trim()).filter(Boolean);
+        names.forEach((name) => {
+          const span = document.createElement("span");
+          span.className = "name-pill";
+          span.textContent = name;
+          container.appendChild(span);
+        });
+      });
+    };
+
+    const renderSky = (sky) => {
+      if (!sky) return;
+      const container = document.getElementById("sky-summary");
+      if (!container) return;
+      clear(container);
+      const symbol = document.createElement("div");
+      symbol.className = "moon-symbol";
+      symbol.textContent = sky.moon_symbol || "";
+      container.appendChild(symbol);
+      container.appendChild(paragraph(`${sky.moon_phase || "Moon phase"} / ${sky.moon_phase_greek || ""}`, "sky-line"));
+      container.appendChild(paragraph(`${sky.zodiac || "Zodiac"} / ${sky.zodiac_greek || ""}`, "sky-line"));
+      container.appendChild(paragraph(sky.english || "", "muted"));
+    };
+
+    const renderTraditions = (items) => {
+      const container = document.getElementById("parallel-traditions");
+      if (!container || !items || !items.length) return;
+      clear(container);
+      items.forEach((item) => {
+        const article = document.createElement("article");
+        article.className = "tradition-item";
+        [
+          item.region ? `Region: ${item.region}` : "",
+          `Orthodox: ${item.orthodox_title || ""}`,
+          item.orthodox_description || "",
+          `Ancient Greek parallel: ${item.ancient_title || ""}`,
+          item.ancient_description || "",
+          item.relationship_note || "Presented as a cultural comparison, not proof of direct continuity.",
+        ].filter(Boolean).forEach((line) => article.appendChild(paragraph(line)));
+        container.appendChild(article);
+      });
+    };
+
     fetch("public_notifications/latest.json", { cache: "no-store" })
       .then((response) => {
         if (!response.ok) throw new Error("No public message");
         return response.json();
       })
       .then((payload) => {
-        document.getElementById("daily-message").textContent = payload.message;
+        text("today-title", payload.title);
+        text("daily-message", payload.message);
+        text("generated-at", payload.generated_at ? `Generated: ${payload.generated_at}` : "");
+        renderNamedays(payload.namedays);
+        renderSky(payload.sky_note);
         if (payload.commentary) {
-          document.getElementById("commentary-en").textContent = payload.commentary.english || "";
-          document.getElementById("commentary-gr").textContent = payload.commentary.greek || "";
+          text("commentary-en", payload.commentary.english);
+          text("commentary-gr", payload.commentary.greek);
         }
+        if (payload.cultural_reflection) {
+          text("reflection-en", payload.cultural_reflection.english);
+          text("reflection-gr", payload.cultural_reflection.greek);
+        }
+        renderTraditions(payload.parallel_traditions);
       })
       .catch(() => {});
   </script>

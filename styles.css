@@ -17,7 +17,20 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.6;
   color: #333;
+  background:
+    linear-gradient(rgba(249, 249, 249, 0.94), rgba(249, 249, 249, 0.94)),
+    var(--page-bg, none);
+  background-attachment: fixed;
   background-color: #f9f9f9;
+  background-position: center;
+  background-size: cover;
+}
+
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1.55;
 }
 
 /* Container */
@@ -91,6 +104,155 @@ body {
   min-height: 60vh;
 }
 
+.site-hero {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.18), transparent 32%),
+    linear-gradient(rgba(23, 77, 59, 0.9), rgba(44, 62, 80, 0.88)),
+    var(--hero-bg, none),
+    linear-gradient(135deg, #174d3b 0%, #2c3e50 100%);
+  background-position: center;
+  background-size: cover;
+}
+
+.hero-panel {
+  background: #fffdf8;
+  border: 1px solid #e5ddce;
+  border-radius: 18px;
+  padding: 30px;
+  box-shadow: 0 12px 32px rgba(39, 55, 47, 0.08);
+}
+
+.hero-panel h2 {
+  color: #174d3b;
+  font-size: clamp(1.8rem, 4vw, 2.7rem);
+  margin-bottom: 12px;
+}
+
+.eyebrow,
+.card-kicker {
+  color: #8a6333;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.status-pill {
+  display: inline-block;
+  background: #edf5ef;
+  border: 1px solid #c9ddcf;
+  border-radius: 999px;
+  color: #315b43;
+  font-size: 0.9rem;
+  margin-top: 14px;
+  padding: 7px 12px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  margin-top: 24px;
+}
+
+.dashboard-grid .card {
+  margin: 0;
+}
+
+.wide-card {
+  grid-column: 1 / -1;
+}
+
+.feature-card {
+  min-height: 230px;
+}
+
+.dashboard-grid .card {
+  border: 1px solid #e5ddce;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 260px;
+  overflow: hidden;
+}
+
+.dashboard-grid .card h2 {
+  border-bottom-color: #d6c4a4;
+}
+
+.language-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.name-pill {
+  background: rgba(255, 250, 239, 0.9);
+  border: 1px solid rgba(214, 196, 164, 0.9);
+  border-radius: 999px;
+  color: #4d351b;
+  display: inline-block;
+  font-weight: 700;
+  padding: 8px 12px;
+}
+
+.sky-summary {
+  align-items: flex-start;
+  display: grid;
+  gap: 8px;
+}
+
+.moon-symbol {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.sky-line {
+  color: #2c3e50;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.muted {
+  color: #69756f;
+}
+
+.stacked-text p,
+.tradition-item p {
+  margin-bottom: 12px;
+}
+
+.tradition-item {
+  border-left: 4px solid #d6c4a4;
+  padding-left: 14px;
+}
+
+.field-content {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 14px;
+  margin-top: auto;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+}
+
+.traditions-card .field-content,
+.moon-card .field-content {
+  margin-top: 12px;
+}
+
+.message-card,
+.opt-in-card {
+  max-width: 1000px;
+}
+
 /* Cards */
 .card {
   background: white;
@@ -133,6 +295,41 @@ body {
 .card li {
   margin-bottom: 10px;
   color: #555;
+}
+
+/* Image-backed homepage fields. Keep this after the generic .card background rule. */
+.card.image-card {
+  background-color: #fffdf8;
+  background-position: center;
+  background-size: cover;
+  position: relative;
+}
+
+.card.image-card::before {
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.9), rgba(255, 253, 248, 0.72)),
+    radial-gradient(circle at bottom right, rgba(23, 77, 59, 0.18), transparent 45%);
+  content: "";
+  inset: 0;
+  position: absolute;
+  z-index: 0;
+}
+
+.card.image-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.card.nameday-card {
+  background-image: url("assets/backgrounds/names%20day.png");
+}
+
+.card.moon-card {
+  background-image: url("assets/backgrounds/moonphase.png");
+}
+
+.card.traditions-card {
+  background-image: url("assets/backgrounds/ancient%20greek%20traditions.png");
 }
 
 /* Highlighted Card */
@@ -411,6 +608,15 @@ a:hover {
   /* Service Grid */
   .service-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid,
+  .language-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-panel {
+    padding: 24px;
   }
 
   /* Policy Page */
