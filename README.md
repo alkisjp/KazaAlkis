@@ -103,6 +103,17 @@ The website payload contains calendar content only. It never exports contacts,
 phone numbers, API credentials, or delivery logs. Review generated JSON before
 committing and pushing it to GitHub.
 
+Menu option `12` generates a bilingual English/Greek commentary draft. Menu
+option `13` publishes the approved draft into the website JSON. Menu option
+`14` commits and pushes only the public website notification JSON files.
+
+AI commentary providers:
+
+- `template`: safe local fallback, no network.
+- `ollama`: local Ollama endpoint, default `http://127.0.0.1:11434`.
+- `openai_compatible`: OpenAI-compatible chat-completions endpoint using
+  `OPENAI_API_KEY` or `OPENAI_COMPATIBLE_API_KEY`.
+
 ## Deployment Assumptions
 
 - Windows has Python 3.8 or newer available for initial environment creation.

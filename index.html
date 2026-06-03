@@ -29,6 +29,14 @@
       <pre id="daily-message">No public daily notification has been published yet.</pre>
     </section>
 
+    <section class="card">
+      <h2>Bilingual Commentary</h2>
+      <p><strong>English</strong></p>
+      <p id="commentary-en">No commentary has been published yet.</p>
+      <p><strong>Ελληνικά</strong></p>
+      <p id="commentary-gr">Δεν έχει δημοσιευτεί ακόμη σχόλιο.</p>
+    </section>
+
     <section>
       <h2>WhatsApp Notifications</h2>
       <p>
@@ -56,6 +64,10 @@
       })
       .then((payload) => {
         document.getElementById("daily-message").textContent = payload.message;
+        if (payload.commentary) {
+          document.getElementById("commentary-en").textContent = payload.commentary.english || "";
+          document.getElementById("commentary-gr").textContent = payload.commentary.greek || "";
+        }
       })
       .catch(() => {});
   </script>

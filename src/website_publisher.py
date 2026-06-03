@@ -20,7 +20,7 @@ class WebsitePublisher:
         self.history_dir = self.output_dir / "history"
 
     def build_payload(self, date_str: str = None, language: str = "bilingual",
-                      tone: str = "friendly"):
+                      tone: str = "friendly", commentary=None):
         """Build a static-site payload from public calendar fields."""
         data = self.db.get_today_data(date_str)
         if data is None:
@@ -35,14 +35,15 @@ class WebsitePublisher:
             "quotes": data.get("quotes", []),
             "historical_events": data.get("historical_events", []),
             "custom_notes": data.get("custom_notes", []),
+            "commentary": commentary,
             "generated_at": datetime.now().isoformat(timespec="seconds"),
             "disclaimer": "KazaALKIS is not an official Kazamias publication.",
         }
 
     def publish(self, date_str: str = None, language: str = "bilingual",
-                tone: str = "friendly"):
+                tone: str = "friendly", commentary=None):
         """Write latest and dated JSON files for GitHub Pages publication."""
-        payload = self.build_payload(date_str, language, tone)
+        payload = self.build_payload(date_str, language, tone, commentary)
         self.history_dir.mkdir(parents=True, exist_ok=True)
         latest_file = self.output_dir / "latest.json"
         history_file = self.history_dir / f"{payload['date']}.json"

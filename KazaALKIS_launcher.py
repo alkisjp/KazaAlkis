@@ -4,6 +4,8 @@ Entry point for the Kazamias Daily Herald application
 """
 
 import sys
+import json
+import subprocess
 from pathlib import Path
 from datetime import datetime
 
@@ -18,6 +20,7 @@ from logger_dashboard import KazaALKISLogger, KazaALKISDashboard
 from calendar_exporter import CalendarExporter
 from path_manager import get_paths
 from website_publisher import WebsitePublisher
+from commentary_generator import CommentaryGenerator
 
 class KazaALKISLauncher:
     """Main application launcher"""
@@ -47,15 +50,17 @@ class KazaALKISLauncher:
         print("9.  Validation dashboard")
         print("10. Export logs to Excel")
         print("11. Export monthly name days to Excel")
-        print("12. Publish today's website JSON")
-        print("13. Exit")
+        print("12. Generate bilingual website commentary draft")
+        print("13. Publish approved website JSON")
+        print("14. Commit and push website update")
+        print("15. Exit")
         print("\n" + "="*60)
 
     def run(self):
         """Run application"""
         while True:
             self.show_menu()
-            choice = input("\nSelect option (1-13): ").strip()
+            choice = input("\nSelect option (1-15): ").strip()
 
             if choice == "1":
                 self.setup_project()
@@ -82,8 +87,12 @@ class KazaALKISLauncher:
                 month = int(input("Month (1-12): ").strip() or datetime.now().month)
                 CalendarExporter(self.db).export_monthly_namedays_xlsx(year, month)
             elif choice == "12":
-                self.publish_website_json()
+                self.generate_website_commentary_draft()
             elif choice == "13":
+                self.publish_website_json()
+            elif choice == "14":
+                self.commit_and_push_website_update()
+            elif choice == "15":
                 self.exit_app()
             else:
                 print("✗ Invalid choice. Please try again.")
@@ -321,10 +330,94 @@ class KazaALKISLauncher:
         """Export a privacy-safe public payload for the static website."""
         language = self.config.get('language', 'bilingual')
         tone = self.config.get('message_tone', 'friendly')
-        latest, history = WebsitePublisher(self.db).publish(language=language, tone=tone)
+        try:
+            commentary = self._load_commentary_draft_for_approval()
+        except RuntimeError as e:
+            print(e)
+            return
+        latest, history = WebsitePublisher(self.db).publish(
+            language=language, tone=tone, commentary=commentary
+        )
         print(f"Website JSON updated: {latest}")
         print(f"Website history updated: {history}")
-        print("Review the files, then commit and push them to publish on GitHub Pages.")
+        print("Review the files, then use option 14 to publish on GitHub Pages.")
+
+    def generate_website_commentary_draft(self):
+        """Generate and save a reviewable bilingual commentary draft."""
+        today_data = self.db.get_today_data()
+        if today_data is None:
+            print("Unable to retrieve today's data")
+            return
+        provider = self.config.get('commentary_provider', 'template')
+        model = self.config.get('commentary_model', 'llama3.1')
+        ollama_url = self.config.get('ollama_url', 'http://127.0.0.1:11434')
+        generator = CommentaryGenerator(provider=provider, model=model, ollama_url=ollama_url)
+        try:
+            commentary = generator.generate(today_data)
+        except Exception as e:
+            print(f"AI commentary generation failed: {e}")
+            print("Falling back to safe local template commentary.")
+            commentary = CommentaryGenerator(provider="template").generate(today_data)
+
+        draft_file = self._commentary_draft_path(today_data["date"])
+        draft_file.parent.mkdir(parents=True, exist_ok=True)
+        draft_file.write_text(json.dumps(commentary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print("\nEnglish commentary:")
+        print(commentary.get("english", ""))
+        print("\nGreek commentary:")
+        print(commentary.get("greek", ""))
+        print(f"\nDraft saved for review: {draft_file}")
+
+    def _commentary_draft_path(self, date_str=None):
+        date_str = date_str or datetime.now().strftime("%Y-%m-%d")
+        return get_paths().app_output_dir / "website_commentary_drafts" / f"{date_str}.json"
+
+    def _load_commentary_draft_for_approval(self):
+        today_data = self.db.get_today_data()
+        if not today_data:
+            return None
+        draft_file = self._commentary_draft_path(today_data["date"])
+        if not draft_file.exists():
+            include = input("No commentary draft found. Publish without commentary? (y/n): ").strip().lower()
+            if include == "y":
+                return None
+            print("Publish cancelled. Generate a commentary draft first with option 12.")
+            raise RuntimeError("No approved commentary draft")
+        commentary = json.loads(draft_file.read_text(encoding="utf-8"))
+        print("\nCommentary draft:")
+        print(f"EN: {commentary.get('english', '')}")
+        print(f"GR: {commentary.get('greek', '')}")
+        approved = input("\nApprove this commentary for the public website? (y/n): ").strip().lower()
+        if approved != "y":
+            raise RuntimeError("Commentary not approved")
+        commentary["review_required"] = False
+        commentary["approved_at"] = datetime.now().isoformat(timespec="seconds")
+        return commentary
+
+    def commit_and_push_website_update(self):
+        """Commit and push only public website notification payload files."""
+        latest = Path("public_notifications") / "latest.json"
+        history_dir = Path("public_notifications") / "history"
+        if not latest.exists():
+            print("No public_notifications/latest.json found. Publish website JSON first.")
+            return
+        history_files = sorted(history_dir.glob("*.json")) if history_dir.exists() else []
+        files = [str(latest)] + [str(path) for path in history_files]
+        confirm = input("Commit and push public website JSON files to GitHub? (y/n): ").strip().lower()
+        if confirm != "y":
+            print("Push cancelled.")
+            return
+        subprocess.run(["git", "add", "-f", *files], check=True)
+        status = subprocess.run(
+            ["git", "diff", "--cached", "--quiet", "--", *files],
+            check=False,
+        )
+        if status.returncode == 0:
+            print("No website JSON changes to commit.")
+            return
+        subprocess.run(["git", "commit", "-m", "Publish daily website notification"], check=True)
+        subprocess.run(["git", "push"], check=True)
+        print("Website notification pushed to GitHub Pages.")
 
     def exit_app(self):
         """Exit application"""

@@ -64,6 +64,10 @@ class ConfigurationManager:
             'log_retention_days': 90,
             'enable_logging': True,
             'privacy_mask_contacts': True
+            ,
+            'commentary_provider': 'template',
+            'commentary_model': 'llama3.1',
+            'ollama_url': 'http://127.0.0.1:11434'
         }
 
     def _save_config(self):

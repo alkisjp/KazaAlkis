@@ -8,6 +8,7 @@ from path_manager import PathManager
 from whatsapp_notifier import BulkMessageSender, WhatsAppNotifier, normalize_phone_number
 from KazaALKIS_launcher import KazaALKISLauncher
 from website_publisher import WebsitePublisher
+from commentary_generator import CommentaryGenerator
 
 
 def make_db(tmp_path):
@@ -127,14 +128,31 @@ def test_website_publisher_exports_public_calendar_data_only(tmp_path):
         INSERT INTO name_days (date, names, saint) VALUES (?, ?, ?)
     """, ("2026-06-02", "Alkis", "Test Saint"))
     db.conn.commit()
-    latest, history = WebsitePublisher(db, str(tmp_path)).publish("2026-06-02")
+    commentary = {"english": "Hello", "greek": "Γεια", "review_required": False}
+    latest, history = WebsitePublisher(db, str(tmp_path)).publish("2026-06-02", commentary=commentary)
     text = latest.read_text(encoding="utf-8")
     assert latest.exists()
     assert history.exists()
     assert "Alkis" in text
     assert "phone" not in text
     assert "contact" not in text
+    assert "Γεια" in text
     db.close()
+
+
+def test_template_commentary_generator_returns_bilingual_public_draft():
+    commentary = CommentaryGenerator("template").generate({
+        "date": "2026-06-02",
+        "namedays": [{"names": "Alkis, Maria"}],
+        "holidays": [],
+        "quotes": [],
+        "historical_events": [],
+        "custom_notes": [],
+    })
+    assert commentary["english"]
+    assert commentary["greek"]
+    assert commentary["review_required"] is True
+    assert commentary["provider"] == "template"
 
 
 def test_duplicate_send_is_skipped_unless_forced(tmp_path):
