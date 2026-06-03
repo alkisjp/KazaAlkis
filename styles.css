@@ -149,6 +149,90 @@ pre {
   padding: 7px 12px;
 }
 
+.vase-banner {
+  background: #1f2925;
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(39, 55, 47, 0.16);
+  color: white;
+  display: grid;
+  grid-template-columns: minmax(280px, 1.1fr) minmax(280px, 0.9fr);
+  margin-top: 24px;
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.vase-media {
+  background: #111;
+  min-height: 420px;
+  position: relative;
+}
+
+.vase-media::after {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.06), rgba(31, 41, 37, 0.35));
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+.vase-media img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  width: 100%;
+}
+
+.vase-copy {
+  align-self: center;
+  padding: 34px;
+}
+
+.vase-copy h2 {
+  color: #fff7e6;
+  font-size: clamp(1.7rem, 3vw, 2.5rem);
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+
+.vase-copy h3 {
+  color: #f0cf91;
+  margin: 18px 0 10px;
+}
+
+.vase-copy p {
+  color: #f4efe5;
+  margin-bottom: 13px;
+}
+
+.vase-copy .eyebrow,
+.vase-copy .muted {
+  color: #f0cf91;
+}
+
+.vase-copy a {
+  background: #f0cf91;
+  border-radius: 999px;
+  color: #1f2925;
+  display: inline-block;
+  font-weight: 700;
+  margin-top: 8px;
+  padding: 10px 15px;
+}
+
+.vase-copy a:hover {
+  background: #fff7e6;
+  color: #1f2925;
+  text-decoration: none;
+}
+
+.vase-fallback .vase-media {
+  display: none;
+}
+
+.vase-fallback {
+  grid-template-columns: 1fr;
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -652,6 +736,18 @@ a:hover {
   }
 
   .hero-panel {
+    padding: 24px;
+  }
+
+  .vase-banner {
+    grid-template-columns: 1fr;
+  }
+
+  .vase-media {
+    min-height: 300px;
+  }
+
+  .vase-copy {
     padding: 24px;
   }
 

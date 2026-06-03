@@ -9,11 +9,13 @@ try:
     from .cultural_reflection import build_cultural_reflection
     from .sky_note import build_sky_note
     from .recipe_recommendations import build_daily_recipes
+    from .greek_vase_assets import GreekVaseAssetManager
 except ImportError:
     from message_builder import MessageBuilder
     from cultural_reflection import build_cultural_reflection
     from sky_note import build_sky_note
     from recipe_recommendations import build_daily_recipes
+    from greek_vase_assets import GreekVaseAssetManager
 
 
 class WebsitePublisher:
@@ -35,6 +37,7 @@ class WebsitePublisher:
         cultural_reflection = build_cultural_reflection(data)
         sky_note = build_sky_note(data["date"])
         daily_recipes = build_daily_recipes(data["date"])
+        greek_vase_banner = GreekVaseAssetManager().select_daily_asset(data["date"])
         return {
             "date": data["date"],
             "title": "Ημερήσιο ελληνικό ημερολόγιο",
@@ -47,6 +50,7 @@ class WebsitePublisher:
             "cultural_reflection": cultural_reflection,
             "sky_note": sky_note,
             "daily_recipes": daily_recipes,
+            "greek_vase_banner": greek_vase_banner,
             "custom_notes": data.get("custom_notes", []),
             "commentary": commentary,
             "generated_at": datetime.now().isoformat(timespec="seconds"),

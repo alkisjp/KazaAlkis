@@ -28,6 +28,21 @@
       <p class="status-pill" id="generated-at">Waiting for today’s public update</p>
     </section>
 
+    <section class="container vase-banner" id="vase-banner">
+      <div class="vase-media">
+        <img id="vase-image" alt="Ancient Greek vase selected for today">
+      </div>
+      <div class="vase-copy">
+        <p class="eyebrow">Greek Vase & Myth</p>
+        <h2 id="vase-title">Daily vase banner loading...</h2>
+        <p class="vase-meta" id="vase-meta"></p>
+        <h3 id="vase-story-title">Mythological note</h3>
+        <p id="vase-description">A verified public-domain vase image will appear here when published.</p>
+        <p class="muted" id="vase-rights"></p>
+        <a id="vase-link" href="#" target="_blank" rel="noopener noreferrer">Read more</a>
+      </div>
+    </section>
+
     <section class="container dashboard-grid" aria-label="Daily calendar fields">
       <article class="card feature-card image-card nameday-card">
         <p class="card-kicker">Name Day</p>
@@ -211,6 +226,30 @@
       }
     };
 
+    const renderVaseBanner = (asset, dateText) => {
+      if (!asset) return;
+      const banner = document.getElementById("vase-banner");
+      const image = document.getElementById("vase-image");
+      const link = document.getElementById("vase-link");
+      text("vase-title", asset.title || "Greek Vase & Myth");
+      text("vase-meta", [dateText, asset.object_type, asset.culture, asset.period, asset.date].filter(Boolean).join(" • "));
+      text("vase-story-title", (asset.myth_keywords && asset.myth_keywords.length) ? asset.myth_keywords.join(" / ") : "Cultural note");
+      text("vase-description", asset.llm_rephrased_description || "");
+      text("vase-rights", [asset.museum, asset.license, asset.attribution_text].filter(Boolean).join(" • "));
+      if (image && asset.image_url) {
+        image.src = asset.image_url;
+        image.alt = `${asset.title || "Greek vase"} from ${asset.museum || "source collection"}`;
+      } else if (banner) {
+        banner.classList.add("vase-fallback");
+      }
+      if (link && asset.source_url) {
+        link.href = asset.source_url;
+        link.style.display = "inline-block";
+      } else if (link) {
+        link.style.display = "none";
+      }
+    };
+
     fetch("public_notifications/latest.json", { cache: "no-store" })
       .then((response) => {
         if (!response.ok) throw new Error("No public message");
@@ -220,6 +259,7 @@
         text("today-title", payload.title);
         text("daily-message", payload.message);
         text("generated-at", payload.generated_at ? `Generated: ${payload.generated_at}` : "");
+        renderVaseBanner(payload.greek_vase_banner, payload.date);
         renderNamedays(payload.namedays);
         renderSky(payload.sky_note);
         if (payload.commentary) {

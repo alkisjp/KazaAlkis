@@ -15,6 +15,12 @@ from astrology_sources import ASTROLOGY_SOURCES, register_astrology_sources
 from data_importer import DataImporter
 from sky_note import build_sky_note
 from recipe_recommendations import build_daily_recipes
+from greek_vase_assets import (
+    GreekVaseAssetManager,
+    GREEK_VASE_ASSET_SCHEMA,
+    SEED_VASE_ASSETS,
+    build_vase_whatsapp_caption,
+)
 
 
 def make_db(tmp_path):
@@ -192,6 +198,36 @@ def test_daily_recipes_select_one_fasting_and_one_ancient_recipe():
     assert recipes["ancient"]["title"]
     assert recipes["ancient"]["url"].startswith("https://")
     assert "not republished" in recipes["notice"]
+
+
+def test_greek_vase_asset_schema_and_license_validation(tmp_path):
+    manager = GreekVaseAssetManager(tmp_path / "greek_vase_daily_assets.json")
+    assets = manager.ensure_cache()
+    assert GREEK_VASE_ASSET_SCHEMA["image_url"] == "string"
+    assert assets[0]["license"] == "Public Domain"
+    assert manager.is_valid_asset(assets[0])
+    bad = dict(assets[0], license="Unknown copyright")
+    assert not manager.is_valid_asset(bad)
+
+
+def test_greek_vase_daily_selection_does_not_repeat_until_exhausted(tmp_path):
+    cache = tmp_path / "greek_vase_daily_assets.json"
+    manager = GreekVaseAssetManager(cache)
+    manager.save_assets(SEED_VASE_ASSETS[:2])
+    first = manager.select_daily_asset("2026-06-03")
+    second = manager.select_daily_asset("2026-06-04")
+    assert first["id"] != second["id"]
+    again_same_day = manager.select_daily_asset("2026-06-04")
+    assert again_same_day["id"] == second["id"]
+
+
+def test_greek_vase_whatsapp_caption_contains_source_and_rights(tmp_path):
+    manager = GreekVaseAssetManager(tmp_path / "greek_vase_daily_assets.json")
+    asset = manager.select_daily_asset("2026-06-03")
+    caption = build_vase_whatsapp_caption(asset)
+    assert "Greek Vase & Myth" in caption
+    assert "Public Domain" in caption
+    assert "Read more:" in caption
 
 
 def test_message_builder_uses_data_date_and_open_data_label():
@@ -468,6 +504,8 @@ def test_website_publisher_exports_generated_cultural_reflection(tmp_path):
     assert "cultural_reflection" in text
     assert "sky_note" in text
     assert "daily_recipes" in text
+    assert "greek_vase_banner" in text
+    assert "Public Domain" in text
     assert "Tasting History" in text
     assert "Aphrodite" in text
     assert "Gemini" in text
