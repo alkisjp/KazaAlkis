@@ -5,6 +5,12 @@ Composes daily Kazamias messages in various tones and languages
 
 from datetime import datetime
 from typing import Dict, List
+try:
+    from .cultural_reflection import build_cultural_reflection
+    from .sky_note import build_sky_note
+except ImportError:
+    from cultural_reflection import build_cultural_reflection
+    from sky_note import build_sky_note
 
 class MessageBuilder:
     """Build daily Kazamias messages"""
@@ -81,8 +87,22 @@ class MessageBuilder:
             lines.append(self._build_fasting_section(today_data['fasting']))
             lines.append("")
 
+        reflection = build_cultural_reflection(today_data)
+        if reflection:
+            lines.append(self._build_cultural_reflection_section(reflection))
+            lines.append("")
+
+        sky_note = build_sky_note(today_data.get('date'))
+        if sky_note:
+            lines.append(self._build_sky_note_section(sky_note))
+            lines.append("")
+
         if today_data.get('historical_events'):
             lines.append(self._build_historical_section(today_data['historical_events']))
+            lines.append("")
+
+        if today_data.get('parallel_traditions'):
+            lines.append(self._build_parallel_traditions_section(today_data['parallel_traditions']))
             lines.append("")
 
         if today_data.get('custom_notes'):
@@ -152,16 +172,24 @@ class MessageBuilder:
         for nameday in namedays:
             saint = nameday.get('saint', 'Unknown Saint')
             names = nameday.get('names', '').split(', ')
-            names_str = ", ".join(names[:3])
+            names_str = ", ".join(names[:8])
+            title = "Name-day calendar entry" if saint in (
+                "Greek nameday seed",
+                "Reviewed GetGreece calendar entry",
+            ) else saint
 
             if self.language == 'bilingual':
-                lines.append(f"  • {saint}")
+                lines.append(f"  • {title}")
                 lines.append(f"    Names: {names_str}")
             elif self.language == 'gr':
-                lines.append(f"  • {saint}")
+                title = "Καταχώριση εορτολογίου" if saint in (
+                    "Greek nameday seed",
+                    "Reviewed GetGreece calendar entry",
+                ) else saint
+                lines.append(f"  • {title}")
                 lines.append(f"    Ονόματα: {names_str}")
             else:
-                lines.append(f"  • {saint}")
+                lines.append(f"  • {title}")
                 lines.append(f"    Names: {names_str}")
 
         if self.language == 'bilingual':
@@ -252,32 +280,25 @@ class MessageBuilder:
         has_quotes = bool(today_data.get('quotes'))
         has_events = bool(today_data.get('historical_events'))
         has_holidays = bool(today_data.get('holidays'))
+        has_traditions = bool(today_data.get('parallel_traditions'))
+        has_reflection = bool(build_cultural_reflection(today_data))
         fasting = today_data.get('fasting')
 
-        if has_namedays and has_quotes and (has_events or has_holidays):
+        if has_namedays and has_quotes and (has_events or has_holidays or has_traditions):
             return ""
 
         en_lines = ["Today’s Context"]
         gr_lines = ["Σημερινό πλαίσιο"]
 
-        if fasting:
-            fasting_name = fasting.get('name', 'the fasting period')
-            description = fasting.get('description') or ''
-            en_lines.append(f"- The reviewed data places today within {fasting_name}.")
-            gr_lines.append(
-                "- Τα ελεγμένα δεδομένα τοποθετούν τη σημερινή ημέρα στην περίοδο: "
-                f"{self._translate_fasting_name(fasting_name)}."
-            )
-
         if not has_namedays:
             en_lines.append("- No reviewed name-day entry is available yet for this date.")
             gr_lines.append("- Δεν υπάρχει ακόμη ελεγμένη καταχώριση εορτολογίου για αυτή την ημερομηνία.")
-        if not has_quotes:
-            en_lines.append("- A public-domain proverb or quote still needs to be selected.")
-            gr_lines.append("- Χρειάζεται ακόμη επιλογή ελεγμένου γνωμικού ή αποφθέγματος δημόσιου τομέα.")
-        if not has_events:
-            en_lines.append("- A Greek-related “on this day” item has not been imported yet.")
-            gr_lines.append("- Δεν έχει εισαχθεί ακόμη ελληνική αναφορά για το «Σαν σήμερα».")
+        if not has_traditions and not has_reflection:
+            en_lines.append("- A reviewed Orthodox/ancient Greek parallel tradition has not been selected yet.")
+            gr_lines.append("- Δεν έχει επιλεγεί ακόμη ελεγμένη παράλληλη ορθόδοξη και αρχαιοελληνική παράδοση.")
+
+        if len(en_lines) == 1 and len(gr_lines) == 1:
+            return ""
 
         if self.language == "en":
             return "\n".join(en_lines)
@@ -308,6 +329,7 @@ class MessageBuilder:
             "Dormition Fast (Dekapentaugoustou)": "Νηστεία Δεκαπενταύγουστου",
             "Christmas Fast (Nisteia Hristougennon)": "Νηστεία Χριστουγέννων",
             "Apostles' Fast": "Νηστεία των Αγίων Αποστόλων",
+            "Apostles Fast": "Νηστεία των Αγίων Αποστόλων",
             "Wednesday and Friday Fasts": "Νηστεία Τετάρτης και Παρασκευής",
         }
         return translations.get(name, name)
@@ -328,6 +350,59 @@ class MessageBuilder:
             "Σαν σήμερα" if self.language == "gr" else "On This Day"
         )
         return "\n".join([header] + [f"  {item['event']}" for item in events[:3]])
+
+    def _build_cultural_reflection_section(self, reflection: Dict) -> str:
+        """Build meaningful Orthodox/ancient Greek cultural commentary."""
+        if self.language == "en":
+            return "Cultural Meaning\n  " + reflection["english"]
+        if self.language == "gr":
+            return "Πολιτιστικό νόημα\n  " + reflection["greek"]
+        return "\n".join([
+            "Cultural Meaning / Πολιτιστικό νόημα",
+            f"  {reflection['english']}",
+            "",
+            f"  {reflection['greek']}",
+        ])
+
+    def _build_sky_note_section(self, sky_note: Dict) -> str:
+        """Build astrology and moon phase section."""
+        if self.language == "en":
+            return "Astrology & Moon\n  " + sky_note["english"]
+        if self.language == "gr":
+            return "Αστρολογία & Σελήνη\n  " + sky_note["greek"]
+        return "\n".join([
+            "Astrology & Moon / Αστρολογία & Σελήνη",
+            f"  {sky_note['english']}",
+            "",
+            f"  {sky_note['greek']}",
+        ])
+
+    def _build_parallel_traditions_section(self, traditions: List[Dict]) -> str:
+        """Build Orthodox and ancient Greek cultural parallel notes."""
+        header = "Parallel Traditions / Παράλληλες Παραδόσεις" if self.language == "bilingual" else (
+            "Παράλληλες Παραδόσεις" if self.language == "gr" else "Parallel Traditions"
+        )
+        lines = [header]
+        for item in traditions[:2]:
+            region = item.get("region")
+            orthodox_title = item.get("orthodox_title") or "Orthodox tradition"
+            orthodox_description = item.get("orthodox_description") or ""
+            ancient_title = item.get("ancient_title") or "Ancient Greek parallel"
+            ancient_description = item.get("ancient_description") or ""
+            relationship = item.get("relationship_note") or (
+                "This is presented as a cultural comparison, not as proof of direct continuity."
+            )
+
+            if region:
+                lines.append(f"  Region / Περιοχή: {region}")
+            lines.append(f"  Orthodox / Ορθόδοξο: {orthodox_title}")
+            if orthodox_description:
+                lines.append(f"    {orthodox_description}")
+            lines.append(f"  Ancient Greek parallel / Αρχαιοελληνικός παραλληλισμός: {ancient_title}")
+            if ancient_description:
+                lines.append(f"    {ancient_description}")
+            lines.append(f"  Note / Σημείωση: {relationship}")
+        return "\n".join(lines)
 
     def _build_custom_notes_section(self, notes: List[Dict]) -> str:
         """Build user-written comments."""

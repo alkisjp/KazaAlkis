@@ -279,6 +279,31 @@ class KazaALKISDatabase:
                 )
             """)
 
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS parallel_traditions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date TEXT NOT NULL,
+                    orthodox_title TEXT,
+                    orthodox_description TEXT,
+                    region TEXT,
+                    ancient_title TEXT,
+                    ancient_description TEXT,
+                    relationship_note TEXT,
+                    source_name TEXT,
+                    source_url TEXT,
+                    license_type TEXT,
+                    import_date TIMESTAMP,
+                    confidence_score REAL DEFAULT 0.5,
+                    manual_review_required BOOLEAN DEFAULT 1,
+                    source_registry_id INTEGER,
+                    source_reference_id INTEGER,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (source_registry_id) REFERENCES source_registry(id),
+                    FOREIGN KEY (source_reference_id) REFERENCES source_references(id)
+                )
+            """)
+
             # Configuration table
             self.cursor.execute("""
                 CREATE TABLE IF NOT EXISTS configuration (
@@ -358,7 +383,7 @@ class KazaALKISDatabase:
         provenance_tables = [
             "calendar_days", "name_days", "saints", "quotes", "holidays",
             "fasting_notes", "moon_calendar", "historical_events", "custom_notes",
-            "namedays", "orthodox_calendar", "astronomy"
+            "namedays", "orthodox_calendar", "astronomy", "parallel_traditions"
         ]
         for table in provenance_tables:
             self._ensure_column(table, "source_reference_id", "INTEGER")
@@ -366,7 +391,7 @@ class KazaALKISDatabase:
         content_tables = [
             "name_days", "namedays", "holidays", "orthodox_calendar",
             "historical_events", "quotes", "astronomy", "saints",
-            "fasting_notes", "moon_calendar", "custom_notes"
+            "fasting_notes", "moon_calendar", "custom_notes", "parallel_traditions"
         ]
         content_columns = {
             "title": "TEXT",
@@ -443,6 +468,7 @@ class KazaALKISDatabase:
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_historical_events_date ON historical_events(date)")
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_quotes_date ON quotes(date)")
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_astronomy_date ON astronomy(date)")
+        self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_parallel_traditions_date ON parallel_traditions(date)")
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_message_log_date_status ON message_log(message_date, status)")
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_contacts_opt_in ON contacts(opt_in_status, active)")
 
@@ -738,13 +764,19 @@ class KazaALKISDatabase:
                 'holidays': [],
                 'fasting': None,
                 'historical_events': [],
-                'custom_notes': []
+                'custom_notes': [],
+                'parallel_traditions': []
             }
 
             self.cursor.execute("""
                 SELECT names, saint FROM name_days WHERE date = ?
             """, (date_str,))
             result['namedays'] = [dict(row) for row in self.cursor.fetchall()]
+            if any(str(row.get("saint", "")).startswith("Reviewed ") for row in result["namedays"]):
+                result["namedays"] = [
+                    row for row in result["namedays"]
+                    if row.get("saint") != "Greek nameday seed"
+                ]
 
             self.cursor.execute("""
                 SELECT quote, author, language FROM quotes WHERE date = ?
@@ -757,8 +789,14 @@ class KazaALKISDatabase:
             result['holidays'] = [dict(row) for row in self.cursor.fetchall()]
 
             self.cursor.execute("""
-                SELECT name, fasting_type FROM fasting_notes
+                SELECT name, fasting_type, description, start_date, end_date FROM fasting_notes
                 WHERE ? BETWEEN start_date AND end_date
+                ORDER BY CASE
+                    WHEN fasting_type = 'major_fast' THEN 1
+                    WHEN fasting_type = 'minor_fast' THEN 2
+                    WHEN fasting_type = 'weekly' THEN 3
+                    ELSE 4
+                END
             """, (date_str,))
             fasting = self.cursor.fetchone()
             if fasting:
@@ -773,6 +811,17 @@ class KazaALKISDatabase:
                 SELECT note FROM custom_notes WHERE date = ?
             """, (date_str,))
             result['custom_notes'] = [dict(row) for row in self.cursor.fetchall()]
+
+            self.cursor.execute("""
+                SELECT orthodox_title, orthodox_description, region,
+                       ancient_title, ancient_description, relationship_note,
+                       source_name, source_url, license_type, confidence_score,
+                       manual_review_required
+                FROM parallel_traditions
+                WHERE date = ?
+                ORDER BY confidence_score DESC, id ASC
+            """, (date_str,))
+            result['parallel_traditions'] = [dict(row) for row in self.cursor.fetchall()]
 
             return result
         except Exception as e:
@@ -798,7 +847,7 @@ class KazaALKISDatabase:
             "movable_feast_uncertainty": [],
             "manual_review_required": [],
         }
-        for table in ("name_days", "quotes", "holidays", "historical_events", "custom_notes"):
+        for table in ("name_days", "quotes", "holidays", "historical_events", "custom_notes", "parallel_traditions"):
             warnings["missing_source"].extend(
                 [(table, row[0]) for row in self.cursor.execute(
                     f"SELECT id FROM {table} WHERE source_reference_id IS NULL"

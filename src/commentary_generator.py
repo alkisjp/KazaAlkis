@@ -5,6 +5,12 @@ import os
 from datetime import datetime
 
 import requests
+try:
+    from .cultural_reflection import build_cultural_reflection
+    from .sky_note import build_sky_note
+except ImportError:
+    from cultural_reflection import build_cultural_reflection
+    from sky_note import build_sky_note
 
 
 class CommentaryGenerator:
@@ -32,15 +38,20 @@ class CommentaryGenerator:
             "date": today_data.get("date"),
             "namedays": today_data.get("namedays", []),
             "holidays": today_data.get("holidays", []),
+            "fasting": today_data.get("fasting"),
             "quotes": today_data.get("quotes", []),
             "historical_events": today_data.get("historical_events", []),
+            "parallel_traditions": today_data.get("parallel_traditions", []),
+            "sky_note": build_sky_note(today_data.get("date")),
             "custom_notes": today_data.get("custom_notes", []),
         }
         return (
             "Create a short public bilingual commentary for a Greek daily calendar. "
             "Return only JSON with keys english and greek. Do not mention official "
             "Kazamias. Do not invent names, holidays, or historical facts. Keep each "
-            "language to 2-3 warm sentences.\n\n"
+            "language to 2-3 warm sentences. If parallel_traditions are provided, "
+            "compare Orthodox and ancient Greek practices carefully as cultural parallels; "
+            "do not claim direct continuity unless the data explicitly says so.\n\n"
             f"Calendar data:\n{json.dumps(public_context, ensure_ascii=False)}"
         )
 
@@ -91,27 +102,45 @@ class CommentaryGenerator:
         date = today_data.get("date", "today")
         namedays = today_data.get("namedays", [])
         holidays = today_data.get("holidays", [])
+        fasting = today_data.get("fasting")
         quotes = today_data.get("quotes", [])
         events = today_data.get("historical_events", [])
+        traditions = today_data.get("parallel_traditions", [])
         english_date, greek_date = self._format_dates(date)
-        if not namedays and not holidays and not quotes and not events:
+        reflection = build_cultural_reflection(today_data)
+        sky_note = build_sky_note(date)
+        if not namedays and not holidays and not fasting and not quotes and not events and not traditions:
             return self._empty_day_commentary(english_date, greek_date)
         english_names, greek_names = self._name_phrases(namedays)
         english_holiday, greek_holiday = self._holiday_phrases(holidays)
+        english_fasting, greek_fasting = self._fasting_phrases(fasting)
         english_quote, greek_quote = self._quote_phrases(quotes)
         english_event, greek_event = self._event_phrases(events)
+        english_tradition, greek_tradition = self._tradition_phrases(traditions)
+        english_reflection = reflection["english"] if reflection else ""
+        greek_reflection = reflection["greek"] if reflection else ""
+        english_sky = sky_note["english"] if sky_note else ""
+        greek_sky = sky_note["greek"] if sky_note else ""
         return {
             "english": " ".join([
                 f"For {english_date}, {english_names}",
                 f"{english_holiday}",
+                f"{english_fasting}",
                 f"{english_quote}",
                 f"{english_event}",
+                f"{english_tradition}",
+                f"{english_reflection}",
+                f"{english_sky}",
             ]).strip(),
             "greek": " ".join([
                 f"Για τις {greek_date}, {greek_names}",
                 f"{greek_holiday}",
+                f"{greek_fasting}",
                 f"{greek_quote}",
                 f"{greek_event}",
+                f"{greek_tradition}",
+                f"{greek_reflection}",
+                f"{greek_sky}",
             ]).strip(),
             "provider": "template",
             "generated_at": datetime.now().isoformat(timespec="seconds"),
@@ -182,6 +211,16 @@ class CommentaryGenerator:
             f"Η ημέρα σημειώνει επίσης: {holiday}, σύμφωνα με τα δημόσια ημερολογιακά δεδομένα.",
         )
 
+    def _fasting_phrases(self, fasting):
+        if not fasting:
+            return ("", "")
+        name = fasting.get("name") or "an Orthodox fasting period"
+        description = fasting.get("description") or ""
+        return (
+            f"The Orthodox calendar also places today within {name}. {description}".strip(),
+            f"Το ορθόδοξο ημερολόγιο τοποθετεί επίσης τη σημερινή ημέρα στην περίοδο: {name}. {description}".strip(),
+        )
+
     def _quote_phrases(self, quotes):
         if not quotes:
             return (
@@ -205,4 +244,24 @@ class CommentaryGenerator:
         return (
             f"For “on this day,” the selected note is: {event}",
             f"Στο «Σαν σήμερα», η επιλεγμένη αναφορά είναι: {event}",
+        )
+
+    def _tradition_phrases(self, traditions):
+        if not traditions:
+            return (
+                "No reviewed Orthodox and ancient Greek parallel tradition has been selected yet.",
+                "Δεν έχει επιλεγεί ακόμη ελεγμένη παράλληλη ορθόδοξη και αρχαιοελληνική παράδοση.",
+            )
+        item = traditions[0]
+        orthodox_title = item.get("orthodox_title") or "the Orthodox tradition"
+        ancient_title = item.get("ancient_title") or "an ancient Greek parallel"
+        region = item.get("region")
+        relationship = item.get("relationship_note") or (
+            "The comparison is cultural and thematic, not proof of direct continuity."
+        )
+        region_en = f" in {region}" if region else ""
+        region_gr = f" στην περιοχή {region}" if region else ""
+        return (
+            f"The cultural note compares {orthodox_title}{region_en} with {ancient_title}. {relationship}",
+            f"Το πολιτιστικό σημείωμα συγκρίνει το {orthodox_title}{region_gr} με το {ancient_title}. {relationship}",
         )

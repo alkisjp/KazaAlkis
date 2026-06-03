@@ -21,6 +21,10 @@ from calendar_exporter import CalendarExporter
 from path_manager import get_paths
 from website_publisher import WebsitePublisher
 from commentary_generator import CommentaryGenerator
+from nameday_sources import register_nameday_sources
+from ancient_tradition_sources import register_ancient_tradition_sources
+from astrology_sources import register_astrology_sources
+from data_importer import DataImporter
 
 class KazaALKISLauncher:
     """Main application launcher"""
@@ -105,11 +109,19 @@ class KazaALKISLauncher:
 
         print("Initializing database...")
         self.db.initialize_schema()
+        source_ids = register_nameday_sources(self.db)
+        print(f"Registered {len(source_ids)} nameday source references.")
+        ancient_source_ids = register_ancient_tradition_sources(self.db)
+        print(f"Registered {len(ancient_source_ids)} ancient tradition source references.")
+        astrology_source_ids = register_astrology_sources(self.db)
+        print(f"Registered {len(astrology_source_ids)} astrology and moon source references.")
 
         print("\nImporting 2026 calendar data...")
         data_path = Path(__file__).parent / "data"
 
-        self.db.import_namedays_from_json(str(data_path / "kazamias_namedays_2026.json"))
+        self.import_open_namedays(year=2026)
+        if (data_path / "kazamias_namedays_2026.json").exists():
+            self.db.import_namedays_from_json(str(data_path / "kazamias_namedays_2026.json"))
         self.db.import_quotes_from_json(str(data_path / "kazamias_quotes_2026.json"))
         self.db.import_holidays_from_json(str(data_path / "greek_holidays_2026.json"))
         self.db.import_fasting_from_json(str(data_path / "fasting_periods_2026.json"))
@@ -142,6 +154,29 @@ class KazaALKISLauncher:
             return
 
         print(f"✓ Database import initiated for {db_path}")
+        source_ids = register_nameday_sources(self.db)
+        print(f"✓ Nameday review sources registered: {len(source_ids)}")
+        ancient_source_ids = register_ancient_tradition_sources(self.db)
+        print(f"✓ Ancient tradition review sources registered: {len(ancient_source_ids)}")
+        astrology_source_ids = register_astrology_sources(self.db)
+        print(f"✓ Astrology and moon review sources registered: {len(astrology_source_ids)}")
+
+        import_namedays = input("Import Unlicense Greek nameday seed from GitHub now? (y/n): ").strip().lower()
+        if import_namedays == "y":
+            year = int(input("Year [default current year]: ").strip() or datetime.now().year)
+            self.import_open_namedays(year=year)
+
+    def import_open_namedays(self, year: int = None):
+        """Import open-license Greek nameday seed data."""
+        year = year or datetime.now().year
+        print(f"Importing alexstyl/Greek-namedays seed data for {year}...")
+        try:
+            count = DataImporter(self.db).import_alexstyl_namedays(year)
+        except Exception as e:
+            print(f"✗ Nameday seed import failed: {e}")
+            return 0
+        print(f"✓ Imported {count} new nameday rows for {year}")
+        return count
 
     def preview_message(self):
         """Preview today's message"""

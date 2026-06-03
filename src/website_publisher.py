@@ -6,8 +6,14 @@ from pathlib import Path
 
 try:
     from .message_builder import MessageBuilder
+    from .cultural_reflection import build_cultural_reflection
+    from .sky_note import build_sky_note
+    from .recipe_recommendations import build_daily_recipes
 except ImportError:
     from message_builder import MessageBuilder
+    from cultural_reflection import build_cultural_reflection
+    from sky_note import build_sky_note
+    from recipe_recommendations import build_daily_recipes
 
 
 class WebsitePublisher:
@@ -26,6 +32,9 @@ class WebsitePublisher:
         if data is None:
             raise ValueError("Unable to retrieve calendar data")
         message = MessageBuilder(language=language, tone=tone).build_daily_message(data)
+        cultural_reflection = build_cultural_reflection(data)
+        sky_note = build_sky_note(data["date"])
+        daily_recipes = build_daily_recipes(data["date"])
         return {
             "date": data["date"],
             "title": "Ημερήσιο ελληνικό ημερολόγιο",
@@ -34,10 +43,13 @@ class WebsitePublisher:
             "holidays": data.get("holidays", []),
             "quotes": data.get("quotes", []),
             "historical_events": data.get("historical_events", []),
+            "parallel_traditions": data.get("parallel_traditions", []),
+            "cultural_reflection": cultural_reflection,
+            "sky_note": sky_note,
+            "daily_recipes": daily_recipes,
             "custom_notes": data.get("custom_notes", []),
             "commentary": commentary,
             "generated_at": datetime.now().isoformat(timespec="seconds"),
-            "disclaimer": "KazaALKIS is not an official Kazamias publication.",
         }
 
     def publish(self, date_str: str = None, language: str = "bilingual",

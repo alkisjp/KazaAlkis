@@ -64,8 +64,20 @@
         <p class="card-kicker">Parallel Traditions</p>
         <h2>Ορθόδοξο & αρχαίο</h2>
         <div class="field-content">
-          <div id="parallel-traditions">No reviewed tradition comparison has been published yet.</div>
+          <div id="parallel-traditions">Loading Orthodox and ancient Greek seasonal context...</div>
         </div>
+      </article>
+
+      <article class="card recipe-card">
+        <p class="card-kicker">Fasting Recipe</p>
+        <h2>Νηστίσιμη ιδέα</h2>
+        <div id="fasting-recipe" class="recipe-content">No fasting recipe has been published yet.</div>
+      </article>
+
+      <article class="card recipe-card">
+        <p class="card-kicker">Ancient Recipe</p>
+        <h2>Ancient world table</h2>
+        <div id="ancient-recipe" class="recipe-content">No ancient recipe has been published yet.</div>
       </article>
 
       <article class="card">
@@ -152,10 +164,19 @@
       container.appendChild(paragraph(sky.english || "", "muted"));
     };
 
-    const renderTraditions = (items) => {
+    const renderTraditions = (items, reflection) => {
       const container = document.getElementById("parallel-traditions");
-      if (!container || !items || !items.length) return;
+      if (!container) return;
       clear(container);
+      if (!items || !items.length) {
+        if (reflection && (reflection.english || reflection.greek)) {
+          container.appendChild(paragraph(reflection.english || ""));
+          container.appendChild(paragraph(reflection.greek || ""));
+        } else {
+          container.appendChild(paragraph("No Orthodox and ancient Greek seasonal context has been published yet."));
+        }
+        return;
+      }
       items.forEach((item) => {
         const article = document.createElement("article");
         article.className = "tradition-item";
@@ -169,6 +190,25 @@
         ].filter(Boolean).forEach((line) => article.appendChild(paragraph(line)));
         container.appendChild(article);
       });
+    };
+
+    const renderRecipe = (id, recipe) => {
+      const container = document.getElementById(id);
+      if (!container || !recipe) return;
+      clear(container);
+      const title = document.createElement("h3");
+      title.textContent = recipe.title || "Recipe";
+      container.appendChild(title);
+      container.appendChild(paragraph(recipe.summary || ""));
+      container.appendChild(paragraph(recipe.source ? `Source: ${recipe.source}` : "", "muted"));
+      if (recipe.url) {
+        const link = document.createElement("a");
+        link.href = recipe.url;
+        link.textContent = "View source recipe";
+        link.rel = "noopener noreferrer";
+        link.target = "_blank";
+        container.appendChild(link);
+      }
     };
 
     fetch("public_notifications/latest.json", { cache: "no-store" })
@@ -190,7 +230,11 @@
           text("reflection-en", payload.cultural_reflection.english);
           text("reflection-gr", payload.cultural_reflection.greek);
         }
-        renderTraditions(payload.parallel_traditions);
+        renderTraditions(payload.parallel_traditions, payload.cultural_reflection);
+        if (payload.daily_recipes) {
+          renderRecipe("fasting-recipe", payload.daily_recipes.fasting);
+          renderRecipe("ancient-recipe", payload.daily_recipes.ancient);
+        }
       })
       .catch(() => {});
   </script>
