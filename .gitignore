@@ -64,6 +64,16 @@ exports/
 # Local test state
 .pytest_cache/
 
+# Internal planning and strategy docs
+NEW REQUIREMENTS.txt
+PROJECT_SUMMARY.md
+QUICK_REFERENCE.md
+SETUP_CHECKLIST.md
+
+# Generated website notification payloads
+public_notifications/latest.json
+public_notifications/history/
+
 # OS
 .DS_Store
 Thumbs.db
