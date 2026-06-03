@@ -32,14 +32,24 @@ class ConfigurationManager:
 
     def _load_config(self) -> dict:
         """Load configuration from JSON file"""
+        defaults = self._default_config()
         if self.config_file.exists():
             try:
                 with open(self.config_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    loaded = json.load(f)
+                return self._upgrade_loaded_config(defaults | loaded)
             except Exception as e:
                 print(f"Error loading config: {e}")
 
-        return self._default_config()
+        return defaults
+
+    def _upgrade_loaded_config(self, config: dict) -> dict:
+        """Apply non-destructive config migrations."""
+        old_project_db = str(PROJECT_ROOT / 'data' / 'kazaalkis.db')
+        new_runtime_db = self._default_config()['database_path']
+        if config.get('database_path') == old_project_db:
+            config['database_path'] = new_runtime_db
+        return config
 
     def _default_config(self) -> dict:
         """Return default configuration"""
@@ -48,7 +58,7 @@ class ConfigurationManager:
             'project_name': 'KazaALKIS',
             'version': '1.1.0',
             'ai_root': str(paths.ai_root),
-            'database_path': str(PROJECT_ROOT / 'data' / 'kazaalkis.db'),
+            'database_path': str(paths.app_db_path),
             'source_data_path': '',
             'whatsapp_provider': 'manual',
             'contacts_file': str(PROJECT_ROOT / 'data' / 'contacts.json'),

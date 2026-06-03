@@ -2,7 +2,7 @@
   "project_name": "KazaALKIS",
   "version": "1.1.0",
   "ai_root": "E:\\AI",
-  "database_path": "E:\\07_050_Workspaces_Code_Projects(latest)\\KazaALKIS\\data\\kazaalkis.db",
+  "database_path": "E:\\AI\\KazaAlkis\\db\\kazaalkis.db",
   "source_data_path": "",
   "whatsapp_provider": "manual",
   "contacts_file": "E:\\07_050_Workspaces_Code_Projects(latest)\\KazaALKIS\\data\\contacts.json",

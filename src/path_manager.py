@@ -22,6 +22,7 @@ class PathManager:
         self.projects = Path(os.getenv("AI_PROJECTS", str(self.ai_root / "projects")))
         self.shared = Path(os.getenv("AI_SHARED", str(self.ai_root / "shared")))
         self.tools = Path(os.getenv("AI_TOOLS", str(self.ai_root / "tools")))
+        self.app_root = Path(os.getenv("KAZAALKIS_ROOT", str(self.ai_root / "KazaAlkis")))
 
     def ensure_runtime_dirs(self):
         """Create the standard AI workspace directories."""
@@ -41,6 +42,8 @@ class PathManager:
             "projects": self.projects,
             "shared": self.shared,
             "tools": self.tools,
+            "kazaalkis": self.app_root,
+            "kazaalkis_db": self.app_db_dir,
         }
 
     @property
@@ -54,6 +57,14 @@ class PathManager:
     @property
     def app_tmp_dir(self):
         return self.tmp / "KazaALKIS"
+
+    @property
+    def app_db_dir(self):
+        return self.app_root / "db"
+
+    @property
+    def app_db_path(self):
+        return self.app_db_dir / "kazaalkis.db"
 
 
 def get_paths():

@@ -33,6 +33,73 @@ def test_default_delivery_mode_is_manual(tmp_path):
     assert "not configured" in config.get_delivery_status()
 
 
+def test_phase2_default_database_path_uses_ai_runtime_root(tmp_path, monkeypatch):
+    monkeypatch.setenv("AI_ROOT", str(tmp_path))
+    config = ConfigurationManager(str(tmp_path / "config"))
+    assert config.get("database_path") == str(tmp_path / "KazaAlkis" / "db" / "kazaalkis.db")
+
+
+def test_phase2_config_migrates_old_project_database_default(tmp_path, monkeypatch):
+    monkeypatch.setenv("AI_ROOT", str(tmp_path))
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    old_project_db = Path(__file__).resolve().parents[1] / "data" / "kazaalkis.db"
+    (config_dir / "kazaalkis_config.json").write_text(
+        '{"database_path": "' + str(old_project_db).replace("\\", "\\\\") + '", "whatsapp_provider": "manual"}',
+        encoding="utf-8",
+    )
+    config = ConfigurationManager(str(config_dir))
+    assert config.get("database_path") == str(tmp_path / "KazaAlkis" / "db" / "kazaalkis.db")
+
+
+def test_phase2_database_schema_contains_required_tables_and_columns(tmp_path):
+    db = make_db(tmp_path)
+    schema = db.get_schema_summary()
+    required_tables = {
+        "namedays",
+        "holidays",
+        "orthodox_calendar",
+        "historical_events",
+        "quotes",
+        "astronomy",
+        "contacts",
+        "opt_in_log",
+        "message_log",
+        "source_registry",
+        "daily_message_cache",
+    }
+    assert required_tables.issubset(schema)
+    required_content_columns = {
+        "id",
+        "date",
+        "description",
+        "source_name",
+        "source_url",
+        "license_type",
+        "import_date",
+        "confidence_score",
+        "manual_review_required",
+    }
+    for table in ("namedays", "holidays", "orthodox_calendar", "historical_events", "quotes", "astronomy"):
+        assert required_content_columns.issubset(set(schema[table]))
+    assert {"name", "phone", "language", "timezone", "opt_in_status", "active", "created_at", "updated_at"}.issubset(
+        set(schema["contacts"])
+    )
+    db.close()
+
+
+def test_phase2_message_log_mirrors_legacy_log(tmp_path):
+    db = make_db(tmp_path)
+    contact_id = db.add_contact("Alkis", "6912345678")
+    assert db.log_message(contact_id, "2026-06-03", "hello", "sent", "manual")
+    assert db.cursor.execute("SELECT COUNT(*) FROM message_logs").fetchone()[0] == 1
+    assert db.cursor.execute("SELECT COUNT(*) FROM message_log").fetchone()[0] == 1
+    row = db.cursor.execute("SELECT phone_masked, status FROM message_log").fetchone()
+    assert row["phone_masked"] == "*******678"
+    assert row["status"] == "sent"
+    db.close()
+
+
 def test_schema_and_validation_report_missing_provenance(tmp_path):
     db = make_db(tmp_path)
     db.cursor.execute("INSERT INTO quotes (date, quote) VALUES (?, ?)", ("2026-06-01", "Test"))
