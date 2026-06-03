@@ -128,6 +128,29 @@ def test_message_builder_uses_data_date_and_open_data_label():
     assert "A user note" in message
 
 
+def test_message_builder_adds_context_when_daily_data_is_sparse():
+    message = MessageBuilder("bilingual", "humorous").build_daily_message({
+        "date": "2026-06-03",
+        "namedays": [],
+        "quotes": [],
+        "holidays": [],
+        "fasting": {
+            "name": "Apostles' Fast",
+            "fasting_type": "minor_fast",
+            "description": "Period of fasting between Pentecost and the feast of St. Peter and St. Paul",
+        },
+        "historical_events": [],
+        "custom_notes": [],
+    })
+    assert "Apostles' Fast" in message
+    assert "Νηστεία των Αγίων Αποστόλων" in message
+    assert "Period of fasting between Pentecost" in message
+    assert "Today’s Context" in message
+    assert "Σημερινό πλαίσιο" in message
+    assert "Δεν υπάρχει ακόμη ελεγμένη καταχώριση" in message
+    assert "Χρειάζεται ακόμη επιλογή" in message
+
+
 def test_manual_fallback_masks_phone_and_uses_ai_outputs(tmp_path, monkeypatch):
     monkeypatch.setenv("AI_ROOT", str(tmp_path))
     notifier = WhatsAppNotifier("manual")

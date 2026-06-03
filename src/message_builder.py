@@ -89,6 +89,11 @@ class MessageBuilder:
             lines.append(self._build_custom_notes_section(today_data['custom_notes']))
             lines.append("")
 
+        context = self._build_context_section(today_data)
+        if context:
+            lines.append(context)
+            lines.append("")
+
         lines.append(self._build_closing())
 
         return "\n".join(lines)
@@ -216,20 +221,106 @@ class MessageBuilder:
 
         fasting_name = fasting.get('name', 'Fasting Period')
         fasting_type = fasting.get('fasting_type', 'Observance')
+        description = fasting.get('description') or ''
 
         icon = "✝️"
 
         if self.language == 'bilingual':
             lines.append(f"{icon} Fasting Period / Περίοδος Νηστείας")
-            lines.append(f"  {fasting_name} ({fasting_type})")
+            lines.append(
+                f"  {fasting_name} ({fasting_type}) / "
+                f"{self._translate_fasting_name(fasting_name)} ({self._translate_fasting_type(fasting_type)})"
+            )
+            if description:
+                lines.append(f"  {description}")
         elif self.language == 'gr':
             lines.append(f"{icon} Περίοδος Νηστείας")
-            lines.append(f"  {fasting_name} ({fasting_type})")
+            lines.append(f"  {self._translate_fasting_name(fasting_name)} ({self._translate_fasting_type(fasting_type)})")
+            if description:
+                lines.append(f"  {self._translate_fasting_description(description)}")
         else:
             lines.append(f"{icon} Fasting Period")
             lines.append(f"  {fasting_name} ({fasting_type})")
+            if description:
+                lines.append(f"  {description}")
 
         return "\n".join(lines)
+
+    def _build_context_section(self, today_data: Dict) -> str:
+        """Add helpful context when reviewed calendar data is sparse."""
+        has_namedays = bool(today_data.get('namedays'))
+        has_quotes = bool(today_data.get('quotes'))
+        has_events = bool(today_data.get('historical_events'))
+        has_holidays = bool(today_data.get('holidays'))
+        fasting = today_data.get('fasting')
+
+        if has_namedays and has_quotes and (has_events or has_holidays):
+            return ""
+
+        en_lines = ["Today’s Context"]
+        gr_lines = ["Σημερινό πλαίσιο"]
+
+        if fasting:
+            fasting_name = fasting.get('name', 'the fasting period')
+            description = fasting.get('description') or ''
+            en_lines.append(f"- The reviewed data places today within {fasting_name}.")
+            gr_lines.append(
+                "- Τα ελεγμένα δεδομένα τοποθετούν τη σημερινή ημέρα στην περίοδο: "
+                f"{self._translate_fasting_name(fasting_name)}."
+            )
+
+        if not has_namedays:
+            en_lines.append("- No reviewed name-day entry is available yet for this date.")
+            gr_lines.append("- Δεν υπάρχει ακόμη ελεγμένη καταχώριση εορτολογίου για αυτή την ημερομηνία.")
+        if not has_quotes:
+            en_lines.append("- A public-domain proverb or quote still needs to be selected.")
+            gr_lines.append("- Χρειάζεται ακόμη επιλογή ελεγμένου γνωμικού ή αποφθέγματος δημόσιου τομέα.")
+        if not has_events:
+            en_lines.append("- A Greek-related “on this day” item has not been imported yet.")
+            gr_lines.append("- Δεν έχει εισαχθεί ακόμη ελληνική αναφορά για το «Σαν σήμερα».")
+
+        if self.language == "en":
+            return "\n".join(en_lines)
+        if self.language == "gr":
+            return "\n".join(gr_lines)
+        return "\n".join(en_lines + [""] + gr_lines)
+
+    def _translate_fasting_description(self, description: str) -> str:
+        """Translate known bundled fasting descriptions without inventing facts."""
+        translations = {
+            "The 40-day period of fasting before Easter":
+                "Η περίοδος νηστείας των 40 ημερών πριν από το Πάσχα",
+            "Two-week period of fasting before the Dormition of the Virgin Mary":
+                "Δεκαπενθήμερη περίοδος νηστείας πριν από την Κοίμηση της Θεοτόκου",
+            "Fasting period before Christmas, traditionally starting on the feast of St. Philip the Apostle":
+                "Περίοδος νηστείας πριν από τα Χριστούγεννα, με παραδοσιακή έναρξη στη μνήμη του Αποστόλου Φιλίππου",
+            "Period of fasting between Pentecost and the feast of St. Peter and St. Paul":
+                "Περίοδος νηστείας ανάμεσα στην Πεντηκοστή και την εορτή των Αγίων Πέτρου και Παύλου",
+            "Traditional Orthodox fasting on Wednesdays and Fridays throughout the year":
+                "Παραδοσιακή ορθόδοξη νηστεία κάθε Τετάρτη και Παρασκευή μέσα στο έτος",
+        }
+        return translations.get(description, description)
+
+    def _translate_fasting_name(self, name: str) -> str:
+        """Translate known bundled fasting names."""
+        translations = {
+            "Great Lent (Sarakosti)": "Μεγάλη Τεσσαρακοστή",
+            "Dormition Fast (Dekapentaugoustou)": "Νηστεία Δεκαπενταύγουστου",
+            "Christmas Fast (Nisteia Hristougennon)": "Νηστεία Χριστουγέννων",
+            "Apostles' Fast": "Νηστεία των Αγίων Αποστόλων",
+            "Wednesday and Friday Fasts": "Νηστεία Τετάρτης και Παρασκευής",
+        }
+        return translations.get(name, name)
+
+    def _translate_fasting_type(self, fasting_type: str) -> str:
+        """Translate known fasting category labels."""
+        translations = {
+            "major_fast": "μεγάλη νηστεία",
+            "minor_fast": "μικρή νηστεία",
+            "weekly": "εβδομαδιαία νηστεία",
+            "observance": "τήρηση",
+        }
+        return translations.get(str(fasting_type).lower(), fasting_type)
 
     def _build_historical_section(self, events: List[Dict]) -> str:
         """Build an on-this-day section."""
