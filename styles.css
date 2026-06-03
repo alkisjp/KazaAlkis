@@ -151,7 +151,7 @@ pre {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 22px;
   margin-top: 24px;
 }
@@ -173,7 +173,7 @@ pre {
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  min-height: 260px;
+  min-height: 300px;
   overflow: hidden;
 }
 
@@ -235,12 +235,12 @@ pre {
 }
 
 .field-content {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.78);
   border-radius: 14px;
   margin-top: auto;
   padding: 16px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(3px);
 }
 
 .traditions-card .field-content,
@@ -299,16 +299,22 @@ pre {
 
 /* Image-backed homepage fields. Keep this after the generic .card background rule. */
 .card.image-card {
+  aspect-ratio: 3 / 2;
   background-color: #fffdf8;
   background-position: center;
   background-size: cover;
+  min-height: 360px;
   position: relative;
+}
+
+.card.image-card.wide-card {
+  aspect-ratio: 3 / 1.25;
+  min-height: 420px;
 }
 
 .card.image-card::before {
   background:
-    linear-gradient(135deg, rgba(255, 253, 248, 0.9), rgba(255, 253, 248, 0.72)),
-    radial-gradient(circle at bottom right, rgba(23, 77, 59, 0.18), transparent 45%);
+    linear-gradient(180deg, rgba(255, 253, 248, 0.18), rgba(255, 253, 248, 0.1) 42%, rgba(255, 253, 248, 0.7) 100%);
   content: "";
   inset: 0;
   position: absolute;
@@ -322,14 +328,17 @@ pre {
 
 .card.nameday-card {
   background-image: url("assets/backgrounds/names%20day.png");
+  background-position: center 38%;
 }
 
 .card.moon-card {
   background-image: url("assets/backgrounds/moonphase.png");
+  background-position: center 42%;
 }
 
 .card.traditions-card {
   background-image: url("assets/backgrounds/ancient%20greek%20traditions.png");
+  background-position: center 38%;
 }
 
 /* Highlighted Card */
