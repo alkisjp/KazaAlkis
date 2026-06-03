@@ -91,21 +91,118 @@ class CommentaryGenerator:
         date = today_data.get("date", "today")
         namedays = today_data.get("namedays", [])
         holidays = today_data.get("holidays", [])
-        names = []
-        for item in namedays:
-            names.extend([name.strip() for name in item.get("names", "").split(",") if name.strip()])
-        name_text = ", ".join(names[:4]) if names else "the names celebrated today"
-        holiday_text = holidays[0]["name"] if holidays else "the rhythm of the Greek calendar"
+        quotes = today_data.get("quotes", [])
+        events = today_data.get("historical_events", [])
+        english_date, greek_date = self._format_dates(date)
+        if not namedays and not holidays and not quotes and not events:
+            return self._empty_day_commentary(english_date, greek_date)
+        english_names, greek_names = self._name_phrases(namedays)
+        english_holiday, greek_holiday = self._holiday_phrases(holidays)
+        english_quote, greek_quote = self._quote_phrases(quotes)
+        english_event, greek_event = self._event_phrases(events)
+        return {
+            "english": " ".join([
+                f"For {english_date}, {english_names}",
+                f"{english_holiday}",
+                f"{english_quote}",
+                f"{english_event}",
+            ]).strip(),
+            "greek": " ".join([
+                f"Για τις {greek_date}, {greek_names}",
+                f"{greek_holiday}",
+                f"{greek_quote}",
+                f"{greek_event}",
+            ]).strip(),
+            "provider": "template",
+            "generated_at": datetime.now().isoformat(timespec="seconds"),
+            "review_required": True,
+        }
+
+    def _empty_day_commentary(self, english_date, greek_date):
         return {
             "english": (
-                f"For {date}, KazaALKIS marks {name_text} with a warm Χρόνια πολλά. "
-                f"Today’s note follows {holiday_text} and keeps the calendar simple, public, and human."
+                f"For {english_date}, the local KazaALKIS database has no reviewed public calendar "
+                "records ready for publication yet. Today’s note stays intentionally modest: a quiet "
+                "reminder that open cultural data is only published here after review."
             ),
             "greek": (
-                f"Για τις {date}, το KazaALKIS θυμάται {name_text} με ένα ζεστό Χρόνια πολλά. "
-                f"Το σημερινό σημείωμα ακολουθεί το ελληνικό ημερολόγιο με απλότητα και σεβασμό."
+                f"Για τις {greek_date}, η τοπική βάση του KazaALKIS δεν έχει ακόμη ελεγμένες δημόσιες "
+                "καταχωρίσεις έτοιμες για δημοσίευση. Το σημερινό σχόλιο μένει επίτηδες λιτό: μια "
+                "ήρεμη υπενθύμιση ότι τα πολιτιστικά δεδομένα δημοσιεύονται εδώ μόνο μετά από έλεγχο."
             ),
             "provider": "template",
             "generated_at": datetime.now().isoformat(timespec="seconds"),
             "review_required": True,
         }
+
+    def _format_dates(self, date_text):
+        try:
+            date = datetime.strptime(date_text, "%Y-%m-%d")
+        except (TypeError, ValueError):
+            return str(date_text or "today"), str(date_text or "σήμερα")
+        english = date.strftime("%A, %d %B %Y")
+        greek_months = {
+            1: "Ιανουαρίου", 2: "Φεβρουαρίου", 3: "Μαρτίου",
+            4: "Απριλίου", 5: "Μαΐου", 6: "Ιουνίου",
+            7: "Ιουλίου", 8: "Αυγούστου", 9: "Σεπτεμβρίου",
+            10: "Οκτωβρίου", 11: "Νοεμβρίου", 12: "Δεκεμβρίου",
+        }
+        greek = f"{date.day} {greek_months[date.month]} {date.year}"
+        return english, greek
+
+    def _extract_names(self, namedays):
+        names = []
+        for item in namedays:
+            raw = item.get("names") or item.get("name") or ""
+            names.extend([name.strip() for name in raw.split(",") if name.strip()])
+        return names
+
+    def _name_phrases(self, namedays):
+        names = self._extract_names(namedays)
+        if not names:
+            return (
+                "there is no reviewed name-day entry in the local database yet.",
+                "δεν υπάρχει ακόμη ελεγμένη καταχώριση εορτολογίου στην τοπική βάση.",
+            )
+        listed = ", ".join(names[:5])
+        return (
+            f"KazaALKIS sends warm name-day wishes to {listed}.",
+            f"το KazaALKIS στέλνει ζεστές ευχές για τη γιορτή των {listed}.",
+        )
+
+    def _holiday_phrases(self, holidays):
+        if not holidays:
+            return (
+                "No public holiday is recorded for today in the reviewed sources.",
+                "Δεν έχει καταγραφεί δημόσια εορτή για σήμερα στις ελεγμένες πηγές.",
+            )
+        holiday = holidays[0].get("name") or holidays[0].get("title") or "today's public holiday"
+        return (
+            f"The day also notes {holiday} from the public calendar data.",
+            f"Η ημέρα σημειώνει επίσης: {holiday}, σύμφωνα με τα δημόσια ημερολογιακά δεδομένα.",
+        )
+
+    def _quote_phrases(self, quotes):
+        if not quotes:
+            return (
+                "A reviewed public-domain proverb or quote has not been selected yet.",
+                "Δεν έχει επιλεγεί ακόμη ελεγμένο γνωμικό ή απόφθεγμα δημόσιου τομέα.",
+            )
+        quote = quotes[0].get("quote") or quotes[0].get("description") or ""
+        author = quotes[0].get("author") or quotes[0].get("title") or "unknown source"
+        return (
+            f"The day’s thought is “{quote}” attributed to {author}.",
+            f"Το γνωμικό της ημέρας είναι «{quote}», με απόδοση σε {author}.",
+        )
+
+    def _event_phrases(self, events):
+        if not events:
+            return (
+                "No Greek-related historical item has been selected for publication.",
+                "Δεν έχει επιλεγεί ακόμη ελληνικό ιστορικό γεγονός για δημοσίευση.",
+            )
+        event = events[0].get("event") or events[0].get("title") or events[0].get("description")
+        return (
+            f"For “on this day,” the selected note is: {event}",
+            f"Στο «Σαν σήμερα», η επιλεγμένη αναφορά είναι: {event}",
+        )

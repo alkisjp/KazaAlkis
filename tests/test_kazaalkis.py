@@ -211,15 +211,33 @@ def test_template_commentary_generator_returns_bilingual_public_draft():
     commentary = CommentaryGenerator("template").generate({
         "date": "2026-06-02",
         "namedays": [{"names": "Alkis, Maria"}],
+        "holidays": [{"name": "Local Holiday"}],
+        "quotes": [{"quote": "Μέτρον άριστον", "author": "Public-domain proverb"}],
+        "historical_events": [{"event": "A Greek historical note"}],
+        "custom_notes": [],
+    })
+    assert "Alkis, Maria" in commentary["english"]
+    assert "Alkis, Maria" in commentary["greek"]
+    assert "Local Holiday" in commentary["english"]
+    assert "Μέτρον άριστον" in commentary["greek"]
+    assert "A Greek historical note" in commentary["english"]
+    assert commentary["review_required"] is True
+    assert commentary["provider"] == "template"
+
+
+def test_template_commentary_has_clean_greek_fallback_when_data_missing():
+    commentary = CommentaryGenerator("template").generate({
+        "date": "2026-06-03",
+        "namedays": [],
         "holidays": [],
         "quotes": [],
         "historical_events": [],
         "custom_notes": [],
     })
-    assert commentary["english"]
-    assert commentary["greek"]
-    assert commentary["review_required"] is True
-    assert commentary["provider"] == "template"
+    assert "the names celebrated today" not in commentary["greek"]
+    assert "μόνο μετά από έλεγχο" in commentary["greek"]
+    assert "Wednesday, 03 June 2026" in commentary["english"]
+    assert "3 Ιουνίου 2026" in commentary["greek"]
 
 
 def test_duplicate_send_is_skipped_unless_forced(tmp_path):
